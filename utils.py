@@ -16,7 +16,7 @@ def notify(msg="Terminated!", img=None):
     "LINE Notify"
     url = "https://notify-api.line.me/api/notify"
     token = os.environ.get("LINE_NOTIFY")
-    headers = {"Authorization": "Bearer "+token}
+    headers = {"Authorization": f"Bearer {token}"}
 
     time = datetime.now().strftime("%y/%m/%d %H:%M")
 
