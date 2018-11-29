@@ -1,1 +1,1 @@
-from .jnas import *
+from .jnas import JNAS
