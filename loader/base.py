@@ -59,7 +59,7 @@ def readwav(filepath):
     numdata = np.frombuffer(rawdata, dtype=get_npformat_from(sampwidth))
     numdata = numdata / (2 ** (sampwidth * 8 - 1))
 
-    return numdata
+    return numdata, framerate
 
 
 def get_npformat_from(width, unsigned=False):
