@@ -40,7 +40,6 @@ def corr_delay(data, mic_num):
 #
 #     return data
 
-
 @jit(f8[:](f8[:, :]))
 def delay_sum(data):
     """Delay and Sum beamforming"""
@@ -440,10 +439,16 @@ def corr_sort(basis, activation, sepa_nb=60, learn_nb=30):
     return approx1, approx2
 
 
-def _pre_emphasis_filtering(data, p=0.97):
-    """高域協調フィルタリング"""
-    return signal.lfilter([1, -p], 1, data)
-
+def freq_pre_emphasis_filtering(data, p=0.97):
+    """周波数領域における高域協調フィルタリング"""
+    ##### 時間領域
+    ##### return signal.lfilter([1, -p], 1, data)
+    # フィルタ係数
+    pre = [1.0, -p]
+    # フィルタ応答
+    wpre, hpre = signal.freqz(pre, worN=nfft // 2)
+    # フィルタ畳み込み（周波数領域）
+    return wpre[:, np.newaxis] * data
 
 def _hz_to_mel(freq):
     """Convert Hz to Mels"""
@@ -557,12 +562,15 @@ def extract_mfcc(data, fs, nfft, nceps):
     mfcc : np.ndarray, shape(n_ceps, n_basis)
         MFCC
     """
-    # フィルタ係数
-    pre = [1.0, -0.97]
-    # フィルタ応答
-    wpre, hpre = signal.freqz(pre, worN=nfft // 2)
+    # # フィルタ係数
+    # pre = [1.0, -0.97]
+    # # フィルタ応答
+    # wpre, hpre = signal.freqz(pre, worN=nfft // 2)
+    # # フィルタ畳み込み（周波数領域）
+    # data = wpre[:, np.newaxis] * data
+
     # フィルタ畳み込み（周波数領域）
-    data = wpre[:, np.newaxis] * data
+    data = freq_pre_emphasis_filtering(data, p=0.97)
     # メルフィルタの生成
     fbank = melfilter(fs, nfft, n_mels=40)
     # メルフィルタリング
