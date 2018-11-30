@@ -438,11 +438,12 @@ def corr_sort(basis, activation, sepa_nb=60, learn_nb=30):
 
     return approx1, approx2
 
+def pre_emphasis_filtering(data, p=0.97):
+    """高域協調フィルタリング"""
+    return signal.lfilter([1, -p], 1, data)
 
-def freq_pre_emphasis_filtering(data, p=0.97):
+def freq_pre_emphasis_filtering(data, nfft, p=0.97):
     """周波数領域における高域協調フィルタリング"""
-    ##### 時間領域
-    ##### return signal.lfilter([1, -p], 1, data)
     # フィルタ係数
     pre = [1.0, -p]
     # フィルタ応答

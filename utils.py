@@ -8,6 +8,7 @@ import seaborn as sns
 import requests
 
 from .analysis import stft
+from .signal import _hz_to_mel
 from datetime import datetime
 
 EPS = np.spacing(1)
@@ -185,6 +186,37 @@ def plot_spect(data, size, shift, name="", fs=48000, show=True,
     plt.title(name)
     plt.xlabel("Time [sec]")
     plt.ylabel("Frequency [Hz]")
+    cbar = plt.colorbar()
+    cbar.set_label('Power[dB]', labelpad=15, rotation=270)
+    plt.tight_layout()
+
+    if show is True:
+        plt.show()
+
+def plot_melspect(data, n_mels, shift, name="", fs=48000, show=True,
+               cmap='inferno'):
+    """plot mel-frequency spectrogram"""
+
+    frames = np.shape(data)[1]
+
+    mel_fs = _hz_to_mel(fs / 2)
+
+    taxis = np.arange(0, shift / fs * frames, shift / fs)
+    # faxis = np.arange(0, mel_fs / 2, mel_fs / n_mels * 2)
+    faxis = np.linspace(0, mel_fs, n_mels)
+
+    taxis, faxis = np.meshgrid(taxis, faxis)
+
+    plt.figure(figsize=(10, 6))
+    sns.set_style('white')
+    sns.set_context('poster')
+    plt.rcParams['xtick.direction'] = 'in'
+    plt.rcParams['ytick.direction'] = 'in'
+    plt.pcolormesh(taxis, faxis, data,
+                   vmin=-200, vmax=0, cmap=cmap)
+    plt.title(name)
+    plt.xlabel("Time [sec]")
+    plt.ylabel("Mel-frequency [mel]")
     cbar = plt.colorbar()
     cbar.set_label('Power[dB]', labelpad=15, rotation=270)
     plt.tight_layout()
