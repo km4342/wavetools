@@ -28,11 +28,13 @@ def cepstrum(data, size, time, fs=48000, dim=20):
     return ceps
 
 
-def stft(data, size, shift, win=np.hanning, fs=48000):
+def stft(data, size, shift=None, fs=48000, win=np.hanning):
     """Short-Time Fourier Transform"""
 
     if size % 2 != 0:
         raise ValueError("Please set 'FFT size' as an even number.")
+    if not shift:
+        shift = size//2
 
     win = win(size)
 

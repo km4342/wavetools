@@ -21,6 +21,7 @@ Update Contents
             label bug (`*P00` can not load) is fixed
  (18.03.22) add comments
  (18.08.23) get_sppaths -> sppaths
+ (18.12.13) Bug fix: 条件を指定した場合に新聞読み上げ文の取得が不可能なバグを修正
 
 @author t-take
 """
@@ -93,17 +94,15 @@ class JNAS(BaseDataSetReader):
 
     Parameter
     ---------
-    home_directory : str, default='/Volumes/share/実験用音声データベース/JNAS'
+    home_directory : str, default='/Volumes/share/ExperimentalSpeechDB/JNAS'
         JNAS data directory path
 
     Attributes
     ----------
     samplingrate : int
         sampling rate (Hz)
-
     path_template : str
         .wav file path template
-
     speakers_information : pandas.DataFrame
         speakers information that is written in speakers_en.txt
     """
@@ -176,9 +175,15 @@ class JNAS(BaseDataSetReader):
                                 'text_set_norm': '*'}
         converted_conditions.update(conditions)
 
-        if converted_conditions['text_set'] in 'NB':
-            conditions['text_set_norm'] = \
-                'NP' if conditions['text_set'] == 'N' else 'PB'
+        if converted_conditions['text_set'] in ['NP', 'N']:
+            converted_conditions['subset'] = ''
+            converted_conditions['text_set'] = 'N'
+            converted_conditions['text_set_norm'] = 'NP'
+        elif converted_conditions['text_set'] in ['PB', 'B']:
+            converted_conditions['text_set'] = 'B'
+            converted_conditions['text_set_norm'] = 'PB'
+        elif converted_conditions['text_set'] != '*':
+            raise InvalidLabelError('text_set must be "N" or "B"')
         if 'text_id' in conditions.keys() and not conditions['text_id'] == '*':
             converted_conditions['text_id'] = str(
                 conditions['text_id']).zfill(3)
@@ -199,32 +204,25 @@ class JNAS(BaseDataSetReader):
         ----------
         label : str or None, default to None
             The data label to show data file
-
         sp_code : str, (Mxxx or Fxxx)
             The speaker ID is speaker's label shown <SEX> + <TEXT-ID>.
             Where <SEX> is one-character code of speaker sex
             (M: male, F: female). And <TEXT-ID> is three-character id of
             newspaper text-set
             (001-150: SC text-set, P01-P05: paragraph text-set).
-
         m_f : str, (M or F)
             one-charecter code of speaker sex (M: male, F: female)
-
         age : str, (xx-xx)
             two-character id  of speaker age
             (10-19, 20-29, 30-39, 40-49, 50-59, 60_and_up)
-
         news_text : str (xxx or Pxx)
             three-character id of sentence
             (001-150: SC text-set, P01-P05: paragraph text-set)
-
         PB_text : str, (X)
             subset name of ATR 503 PB-sentences (A, B, C, ..., J)
-
         rec_site : str, (xxx)
             recorded site of sentences
             (please check the rec_site_en.txt or rec_site_jp.txt)
-
         rec_date : str, (x/xx/xx)
             recorded date of sentences
             (please check the rec_site_en.txt or rec_site_jp.txt)
@@ -265,11 +263,9 @@ class JNAS(BaseDataSetReader):
         ----------
         code : str, (Mxxx or Fxxx)
             speaker code
-
         text_set : str, ('NP' or 'PB')
             If NP, get news text speech path
             If PB, get phoneme balance speech path
-
         mic : str, ('DT' or 'HS')
             If DT, get path recorded by desktop mic
             If PB, get path recorded by head set mic
@@ -287,19 +283,23 @@ class JNAS(BaseDataSetReader):
 
         if text_set == 'NP':
             text_set = 'N'
+            return self.get_paths(
+                text_set=text_set,
+                sex=sp_data[1],
+                text_id=sp_data[3],
+                sen_id=sen_id,
+                mic=mic,
+            )
         if text_set == 'PB':
             text_set = 'B'
-
-        path_generator = self.get_paths(
-            text_set=text_set,
-            sex=sp_data[1],
-            text_id=sp_data[3],
-            subset=sp_data[4],
-            sen_id=sen_id,
-            mic=mic,
-        )
-
-        return path_generator
+            return self.get_paths(
+                text_set=text_set,
+                sex=sp_data[1],
+                text_id=sp_data[3],
+                subset=sp_data[4],
+                sen_id=sen_id,
+                mic=mic,
+            )
 
     def sploads(self, code, sen_id='*', text_set='PB', mic='HS'):
         """
@@ -309,11 +309,9 @@ class JNAS(BaseDataSetReader):
         ----------
         code : str, (Mxxx or Fxxx)
             speaker code
-
         text_set : str, ('NP' or 'PB')
             If NP, get news text speech path
             If PB, get phoneme balance speech path
-
         mic : str, ('DT' or 'HS')
             If DT, get path recorded by desktop mic
             If PB, get path recorded by head set mic

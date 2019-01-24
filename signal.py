@@ -130,30 +130,39 @@ def null_beam(data):
     return data_sum1, data_sum2
 
 
-def mix_snr(data1, data2, snr=0):
+def mix_snr(speech, noise, snr=0):
     """
     mix two sound sources with a desired SNR
 
     Parameters:
     -----------
-      data1: sound source 1
-      data2: sound source 2
-        snr: desired SNR[dB] (default: 0)
+      speech: input speech sound source
+       noise: sound source 2
+         snr: desired SNR[dB] (default: 0)
 
     Returns:
     --------
           mix: mixed signal with specified SNR
-      signal1: sound source in the mixture signal 1
-      signal2: sound source in the mixture signal 2
+       signal: sound source in the mixture signal 1
+        noise: sound source in the mixture signal 2
          coef: mixture coefficient
 
     """
 
-    inSNR = cul_snr(data1, data2)
+    # delete silent point
+    n_filter = 2000
+    ave = np.convolve(abs(speech).flatten(), np.ones(n_filter)/n_filter, mode='same')
+    candidacy = ave[np.argsort(ave)[-int(len(ave) * 0.05)]]
+    threshold = 20 * np.log10(candidacy.mean()) - 21.0
+    _speech = np.delete(speech, obj=np.where(20 * np.log10(ave) < threshold))
+
+    inSNR = cul_snr(_speech, noise)
     coef = 10**((inSNR - snr) / 20)
 
-    signal = data1
-    noise = data2 * coef
+    # print("INPUT SNR: {}[dB]".format(inSNR))
+
+    signal = speech
+    noise = noise * coef
 
     mix = signal + noise
 
@@ -168,22 +177,10 @@ def mix_snr(data1, data2, snr=0):
     return mix, signal, noise, coef
 
 
-def cul_snr(data1, data2):
+def cul_snr(data1, data2, axis=None):
     """calculate input SNR"""
 
-    length1 = len(data1)
-    length2 = len(data2)
-
-    signal = 0
-    noise = 0
-
-    for (i, j) in zip(range(length1), range(length2)):
-        signal += np.dot(data1[i].T, data1[i])
-        noise += np.dot(data2[j].T, data2[j])
-
-    insnr = 10 * np.log(signal / noise)
-
-    return insnr
+    return 20 * np.log10(np.sum(abs(data1), axis=axis) / np.sum(abs(data2), axis=axis))
 
 
 def cal_sp(play_num, time=20, fs=48000, device=2):
