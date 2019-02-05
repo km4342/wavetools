@@ -456,7 +456,6 @@ def _hz_to_mel(freq):
 
 def _mel_to_hz(mels):
     """Convert mel bin numbers to frequencies"""
-
     return 700.0 * (10.0**(mels / 2595.0) - 1.0)
 
 

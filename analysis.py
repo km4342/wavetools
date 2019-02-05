@@ -27,8 +27,7 @@ def cepstrum(data, size, time, fs=48000, dim=20):
 
     return ceps
 
-
-def stft(data, size, shift=None, fs=48000, win=np.hanning):
+def stft(data, fs, size, shift=None, win=np.hanning):
     """Short-Time Fourier Transform"""
 
     if size % 2 != 0:
@@ -54,21 +53,23 @@ def stft(data, size, shift=None, fs=48000, win=np.hanning):
         start = m * int(shift)
         stft_x[:, m] = np.fft.fft(xf[start: start + size] * win)
 
-    spectrogram = stft_x[0: size // 2, :]  # Spectrogram
+    spectrogram = stft_x[0: size//2, :]  # Spectrogram
 
     return spectrogram
 
-
-def istft(data, length, shift, win=np.hanning, fs=48000):
+def istft(data, fs, length, shift=None, win=np.hanning):
     """Inverse Short-Time Fourier Transform"""
 
-    freq, frames = np.shape(data)  # Frequency, number of Frames
+    freq, frames = np.shape(data)
 
-    size = freq * 2  # frame size
+    size = freq*2
+
+    if shift is None:
+        shift = size//2
 
     win = win(size)
 
-    syntheWin = _synthesized_window(shift, win)  # Synthesized Window
+    syntheWin = _synthesized_window(shift, win)
 
     spect = np.zeros(size, dtype="complex64")
     wave = np.zeros(frames * shift + size, dtype="float64")
@@ -79,42 +80,37 @@ def istft(data, length, shift, win=np.hanning, fs=48000):
         wave[start: start + size] = (wave[start: start + size] +
                                      np.fft.ifft(spect).real * syntheWin * 2)
 
-    waveform = wave[0:length]  # discard zeroPadding
+    waveform = wave[0:length]
 
     return waveform
 
-
-def reconst(data, length, size, shift, win=np.hanning, fs=48000, iter=100):
+def reconst(data, fs, length, shift=None, iter=100):
     """reconstruct spectrogram to estimate phaseSpectrum"""
-
-    win = win(size)
-
     shape = np.shape(data)  # matrix shape
+    size = shape[0]*2
 
-    amplitude = np.sqrt(data)  # amplitudeSpectrum
+    if shift is None:
+        shift = size//2
+
     phase = np.random.uniform(-np.pi, np.pi, shape)  # phaseSpectrum
 
     spect = np.zeros(shape, dtype="float64")
-    spect = amplitude * np.exp(1j * phase)  # default spectrogram
+    spect = data * np.exp(1j * phase)  # default spectrogram
 
     for _ in range(iter):
-
-        waveform = istft(spect, length, shift, win, fs)
-
-        approx_spect = stft(waveform, size, shift, win, fs)
+        waveform = istft(spect, fs, length, shift)
+        approx_spect = stft(waveform, fs, size, shift)
 
         bias = approx_spect / abs(approx_spect)
         bias[np.isnan(bias)] = 1  # replace NaN
 
-        spect = amplitude * bias  # replace amplitude
+        spect = data * bias  # replace amplitude
 
     return spect
-
 
 @jit(f8[:](i8, f8[:]))
 def _synthesized_window(shift, win):
     """create synthesized window for ISTFT"""
-
     size = len(win)
     syntheWin = np.zeros(size, dtype="float64")
 

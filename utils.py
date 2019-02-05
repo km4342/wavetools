@@ -94,7 +94,8 @@ def plot_spectrogram(data, fs, size, shift=None, show=True, cmap='inferno'):
     sns.set_context('poster')
     plt.rcParams['xtick.direction'] = 'in'
     plt.rcParams['ytick.direction'] = 'in'
-    plt.pcolormesh(taxis, faxis, 10*np.log10(data), vmin=-200, vmax=0, cmap=cmap)
+    plt.pcolormesh(taxis, faxis, data, cmap=cmap)
+    # plt.pcolormesh(taxis, faxis, 10*np.log10(data), vmin=-200, vmax=0, cmap=cmap)
     plt.xlabel("Time [sec]")
     plt.ylabel("Frequency [Hz]")
     cbar = plt.colorbar()
@@ -184,14 +185,14 @@ def plot_spectrum(data, name="", fs=48000, show=True):
     if show is True:
         plt.show()
 
-def plot_melspect(data, n_mels, shift, name="", fs=48000, show=True,
-               cmap='inferno'):
+def plot_melspectrogram(data, fs, size, n_mels, shift=None, show=True,
+                        cmap='inferno'):
     """plot mel-frequency spectrogram"""
+    if not shift:
+        shift = size//2
 
     frames = np.shape(data)[1]
-
     mel_fs = _hz_to_mel(fs / 2)
-
     taxis = np.arange(0, shift / fs * frames, shift / fs)
     # faxis = np.arange(0, mel_fs / 2, mel_fs / n_mels * 2)
     faxis = np.linspace(0, mel_fs, n_mels)
@@ -203,9 +204,7 @@ def plot_melspect(data, n_mels, shift, name="", fs=48000, show=True,
     sns.set_context('poster')
     plt.rcParams['xtick.direction'] = 'in'
     plt.rcParams['ytick.direction'] = 'in'
-    plt.pcolormesh(taxis, faxis, 10 * np.log10(data),
-                   vmin=-200, vmax=0, cmap=cmap)
-    plt.title(name)
+    plt.pcolormesh(taxis, faxis, data, cmap=cmap)
     plt.xlabel("Time [sec]")
     plt.ylabel("Mel-frequency [mel]")
     cbar = plt.colorbar()
